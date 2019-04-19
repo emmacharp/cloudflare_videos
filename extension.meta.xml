@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<extension id="cloudflare_videos" status="released" xmlns="http://getsymphony.com/schemas/extension/1.0">
+	<name>Cloudflare Videos</name>
+	<description>
+		Uses Cloudflare Stream platform to host video files in Symphony
+	</description>
+	<repo type="github">https://github.com/DeuxHuitHuit/cloudflare_videos</repo>
+	<url type="issues">https://github.com/DeuxHuitHuit/cloudflare_videos/issues</url>
+	<types>
+		<type>Field</type>
+		<type>Video</type>
+		<type>Third Party Integration</type>
+		<type>Stream</type>
+	</types>
+	<authors>
+		<author>
+			<name github="DeuxHuitHuit" symphony="nitriques" twitter="DeuxHuitHuit">Deux Huit Huit</name>
+			<website>https://deuxhuithuit.com/</website>
+		</author>
+	</authors>
+	<dependencies>
+		<!-- None -->
+	</dependencies>
+	<releases>
+		<release version="1.0.0" date="2019-04-19" min="3.0.0" max="3.x.x">
+			- First release
+		</release>
+	</releases>
+</extension>
