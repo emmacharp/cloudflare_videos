@@ -215,7 +215,6 @@ class FieldCloudflare_Video extends Field
             $wrapper->setAttribute('data-cf-api-key', $config['api-key']);
             $wrapper->setAttribute('data-cf-zone-id', $config['zone-id']);
             $wrapper->setAttribute('data-cf-email', $config['email']);
-            $wrapper->setAttribute('data-current-url', $data['video_url']);
         }
 
         // Create UI
@@ -235,11 +234,17 @@ class FieldCloudflare_Video extends Field
         $input = Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').'][video_url]'.$fieldnamePostfix);
         $input->setAttribute('type', 'hidden');
         $input->setAttribute('class', 'js-cf-video-url');
+        if ($hasVideo) {
+            $input->setAttribute('value', $data['video_url']);
+        }
         $panel->appendChild($input);
         // Video meta hidden
         $input = Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').'][meta]'.$fieldnamePostfix);
         $input->setAttribute('type', 'hidden');
         $input->setAttribute('class', 'js-cf-video-meta');
+        if ($hasVideo) {
+            $input->setAttribute('value', $data['meta']);
+        }
         $panel->appendChild($input);
         // Add panel
         $label->appendChild($panel);
