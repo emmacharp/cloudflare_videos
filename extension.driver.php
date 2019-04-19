@@ -16,6 +16,31 @@ class extension_cloudflare_videos extends Extension
      */
     const EXT_NAME = 'Field: Cloudflare Video';
 
+    private static $assetsLoaded = false;
+
+    /**
+     * Loads the assets required for the publish view
+     *
+     * @return void
+     */
+    public static function loadAssetsOnce()
+    {
+        if (self::$assetsLoaded) {
+            return;
+        }
+        if (class_exists('Administration', false) &&
+            Administration::instance() instanceof Administration &&
+            Administration::instance()->Page instanceof HTMLPage
+        ) {
+            $page = Administration::instance()->Page;
+
+            $page->addScriptToHead('https://unpkg.com/tus-js-client@1.7.1/dist/tus.min.js');
+            $page->addScriptToHead(URL . '/extensions/cloudflare_videos/assets/cloudflare_videos.publish.js');
+
+            self::$assetsLoaded = true;
+        }
+    }
+
     /* ********* INSTALL/UPDATE/UNINSTALL ******* */
 
     /**

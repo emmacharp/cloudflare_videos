@@ -30,13 +30,20 @@ class FieldCloudflare_Video extends Field
         // call the parent constructor
         parent::__construct();
         // set the name of the field
-        $this->_name = __('Entry Relationship');
+        $this->_name = __('Cloudflare video');
         // permits to make it required
         $this->_required = true;
         // permits the make it show in the table columns
         $this->_showcolumn = true;
         // permits association
         $this->_showassociation = true;
+        // set as not required by default
+        $this->set('required', 'no');
+    }
+
+    public function isRequired()
+    {
+        return $this->get('required') === 'yes';
     }
 
     public function isSortable()
@@ -100,7 +107,7 @@ class FieldCloudflare_Video extends Field
         $message = null;
         $required = $this->isRequired();
 
-        if ($required && (!is_array($data) || count($data) == 0 || strlen($data['video']) < 1)) {
+        if ($required && (!is_array($data) || count($data) == 0 || strlen($data['video_url']) < 1)) {
             $message = __("'%s' is a required field.", array($this->get('label')));
             return self::__MISSING_FIELDS__;
         }
@@ -122,90 +129,18 @@ class FieldCloudflare_Video extends Field
     public function processRawFieldData($data, &$status, &$message = null, $simulate = false, $entry_id = null)
     {
         $status = self::__OK__;
-        $entries = null;
 
         if (!is_array($data) && !is_string($data)) {
             return null;
         }
 
         $row = array(
-            'video' => $entries
+            'video_url' => $data['video_url'],
+            'meta' => $data['meta'],
         );
 
         // return row
         return $row;
-    }
-
-    /**
-     * This function permits parsing different field settings values
-     *
-     * @param array $settings
-     *	the data array to initialize if necessary.
-        */
-    public function setFromPOST(Array $settings = array())
-    {
-        // call the default behavior
-        parent::setFromPOST($settings);
-
-        // declare a new setting array
-        $new_settings = array();
-
-        // set new settings
-        //$new_settings['show_header'] = $settings['show_header'] == 'yes' ? 'yes' : 'no';
-
-        // save it into the array
-        $this->setArray($new_settings);
-    }
-
-    /**
-     *
-     * Validates the field settings before saving it into the field's table
-     */
-    public function checkFields(Array &$errors, $checkForDuplicates = true)
-    {
-        $parent = parent::checkFields($errors, $checkForDuplicates);
-        if ($parent != self::__OK__) {
-            return $parent;
-        }
-
-        return (!empty($errors) ? self::__ERROR__ : self::__OK__);
-    }
-
-    /**
-     *
-     * Save field settings into the field's table
-     */
-    public function commit()
-    {
-        // if the default implementation works...
-        if (!parent::commit()) {
-            return false;
-        }
-
-        $id = $this->get('id');
-
-        // exit if there is no id
-        if($id == false) {
-            return false;
-        }
-
-        // declare an array contains the field's settings
-        $settings = array(
-
-        );
-
-        return FieldManager::saveSettings($id, $settings);
-    }
-
-    /**
-     *
-     * This function allows Fields to cleanup any additional things before it is removed
-     * from the section.
-     * @return boolean
-     */
-    public function tearDown()
-    {
-        return parent::tearDown();
     }
 
     /* ******* DATA SOURCE ******* */
@@ -238,6 +173,8 @@ class FieldCloudflare_Video extends Field
     {
         /* first line, label and such */
         parent::displaySettingsPanel($wrapper, $errors);
+        /* second line, footer */
+        $this->appendStatusFooter($wrapper);
     }
 
     /**
@@ -251,7 +188,90 @@ class FieldCloudflare_Video extends Field
      */
     public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
     {
+        if (!$data || !isset($data['video_url'])) {
+            $data = [
+                'video_url' => null,
+                'meta' => null,
+            ];
+        }
+
         $label = Widget::Label($this->get('label'));
+        $isRequired = $this->isRequired();
+        $meta = @json_decode($data['meta']);
+        $hasVideo = !empty($data['video_url']) && $meta;
+
+        if(!$isRequired) {
+            $label->appendChild(new XMLElement('i', __('Optional')));
+        }
+
+        // Load assets
+        extension_cloudflare_videos::loadAssetsOnce();
+
+        // Add settings
+        $config = Symphony::Configuration()->get('cloudflare_videos');
+        if (empty($config) || empty($config['api-key']) || empty($config['zone-id']) || empty($config['email'])) {
+            $flagWithError = __('Cloudflare video configuration is invalid');
+        } else {
+            $wrapper->setAttribute('data-cf-api-key', $config['api-key']);
+            $wrapper->setAttribute('data-cf-zone-id', $config['zone-id']);
+            $wrapper->setAttribute('data-cf-email', $config['email']);
+            $wrapper->setAttribute('data-current-url', $data['video_url']);
+        }
+
+        // Create UI
+        $panel = new XMLElement('div');
+        $uploadClass = $hasVideo ? 'irrelevant' : 'active';
+        $panel->setAttribute('class', "js-cf-video-upload $uploadClass");
+        // File input
+        $input = Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').'][video]'.$fieldnamePostfix);
+        $input->setAttribute('type', 'file');
+        $input->setAttribute('accept', 'video/mp4, video/m4v, video/webm, video/mov, video/quicktime');
+        $input->setAttribute('class', 'js-cf-video-file');
+        if ($hasVideo) {
+            $input->setAttribute('disabled', 'disabled');
+        }
+        $panel->appendChild($input);
+        // Video url hidden
+        $input = Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').'][video_url]'.$fieldnamePostfix);
+        $input->setAttribute('type', 'hidden');
+        $input->setAttribute('class', 'js-cf-video-url');
+        $panel->appendChild($input);
+        // Video meta hidden
+        $input = Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').'][meta]'.$fieldnamePostfix);
+        $input->setAttribute('type', 'hidden');
+        $input->setAttribute('class', 'js-cf-video-meta');
+        $panel->appendChild($input);
+        // Add panel
+        $label->appendChild($panel);
+        // Progress panel
+        $panel = new XMLElement('div');
+        $panel->setAttribute('class', 'js-cf-video-progress');
+        $panel->setAttribute('style', 'height: 10px; background-color: blue; width: 0%');
+        // Add panel
+        $label->appendChild($panel);
+        // Player panel
+        $panel = new XMLElement('div');
+        $playerClass = !$hasVideo ? 'irrelevant' : 'active';
+        $panel->setAttribute('class', "js-cf-video-player $playerClass");
+        if ($hasVideo) {
+            $playerElement = new XMLElement('stream');
+            $playerElement->setAttributeArray([
+                'src' => $meta->uid,
+                'controls' => 'controls',
+                'height' => '240px',
+                'width' => '480px',
+            ]);
+            $panel->appendChild($playerElement);
+            $playerScript = new XMLElement('script');
+            $playerScript->setAttributeArray([
+                'data-cfasync' => 'false',
+                'defer' => 'defer',
+                'src' => "https://embed.cloudflarestream.com/embed/r4xu.fla9.latest.js?video={$meta->uid}"
+            ]);
+            $panel->appendChild($playerScript);
+        }
+        // Add panel
+        $label->appendChild($panel);
 
         // label error management
         if ($flagWithError != null) {
@@ -272,9 +292,57 @@ class FieldCloudflare_Video extends Field
         if ($entry_id == null || !is_array($data) || empty($data)) {
             return '';
         }
-        return $data;
+        return $data['video_url'];
     }
 
+    /**
+     *
+     * Build the UI for the table view
+     * @param Array $data
+     * @param XMLElement $link
+     * @param int $entry_id
+     * @return string - the html of the link
+     */
+    public function prepareTableValue($data, XMLElement $link = null, $entry_id = null)
+    {
+        $video_url = $data['video_url'];
+        $meta = $data['meta'];
+        $textValue = $this->prepareTextValue($data, $entry_id);
+        $value = null;
+
+        // no url = early exit
+        if (empty($video_url) || !($meta = @json_decode($meta))) {
+            return null;
+        }
+
+        // no thumbnail
+        if (empty($meta->thumbnail)) {
+            // if not use the title or the url as value
+            $value = $textValue;
+        } else {
+            // create a image
+            //$img_path = URL . '/image/1/0/40/1/' . $meta->thumbnail;
+            $img_path = $meta->thumbnail;
+
+            $value = '<img src="' . $img_path .'" alt="" height="40" />';
+        }
+
+        // does this cell serve as a link ?
+        if (!!$link) {
+            // if so, set our html as the link's value
+            $link->setValue($value);
+
+        } else {
+            // if not, wrap our html with a external link to the resource url
+            $link = new XMLElement('a',
+                $value,
+                ['href' => $meta->preview, 'target' => '_blank', 'title' => $textValue]
+            );
+        }
+
+        // returns the link's html code
+        return $link->generate();
+    }
 
     /* ********* SQL Data Definition ************* */
 
@@ -293,6 +361,8 @@ class FieldCloudflare_Video extends Field
                     'auto' => true
                 ],
                 'entry_id' => 'int(11)',
+                'video_url' => 'varchar(512)',
+                'meta' => 'text',
             ])->keys([
                 'id' => 'primary',
                 'entry_id' => 'unique',
