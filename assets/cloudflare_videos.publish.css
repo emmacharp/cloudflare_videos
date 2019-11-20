@@ -37,3 +37,12 @@
 	background-color: #2f77eb;
 	border-radius: 5px;
 }
+
+.field-cloudflare_video .invalid .file {
+	margin-bottom: 1rem !important;
+	color: #657685;
+}
+
+.field-cloudflare_video .invalid > p {
+	margin-bottom: 3rem;
+}

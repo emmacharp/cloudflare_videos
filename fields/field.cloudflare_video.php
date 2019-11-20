@@ -152,7 +152,7 @@ class FieldCloudflare_Video extends Field
      */
     public function appendFormattedElement(XMLElement &$wrapper, $data, $encode = false, $mode = null, $entry_id = null)
     {
-        if (!is_array($data) || empty($data)) {
+        if (!is_array($data) || empty($data) || (empty($data['video_url']) || empty($data['meta']))) {
             return;
         }
 
