@@ -156,9 +156,32 @@ class FieldCloudflare_Video extends Field
             return;
         }
 
-        $root = new XMLElement($this->get('element_name'));
+        $metas = json_decode($data['meta'], JSON_FORCE_OBJECT);
 
-        $wrapper->appendChild($root);
+        if ($metas['readyToStream'] !== true || $metas['status']['state'] !== 'ready') {
+            $config = Symphony::Configuration()->get('cloudflare_videos');
+            $ch = new Gateway();
+            $ch->init($data['video_url']);
+            $ch->setopt('HTTPHEADER', array(
+                'X-Auth-Key: ' . $config['api-key'],
+                'X-Auth-Email: ' . $config['email'],
+            ));
+            $ch->setopt('CONTENTTYPE', 'application/json');
+            $result = json_decode($ch->exec(), JSON_FORCE_OBJECT);
+
+            if ($result['success'] === true) {
+                $metas = $result['result'];
+            }
+        }
+
+        $root = new XMLElement('cloudflare');
+
+        foreach ($metas as $key => $value) {
+            $root->appendChild(new XMLElement($key, $value));
+        }
+
+        $root->appendChild(new XMLElement('api-url', $data['video_url']));
+        $wrapper->appendChild(new XMLElement($this->get('element_name'), $root));
     }
 
     /* ********* UI *********** */
@@ -195,7 +218,7 @@ class FieldCloudflare_Video extends Field
             ];
         }
 
-        $label = Widget::Label($this->get('label'));
+        $label = Widget::Label($this->get('label'), null, 'file');
         $isRequired = $this->isRequired();
         $meta = @json_decode($data['meta']);
         $hasVideo = !empty($data['video_url']) && $meta;
@@ -217,9 +240,17 @@ class FieldCloudflare_Video extends Field
             $wrapper->setAttribute('data-cf-email', $config['email']);
         }
 
+        $ctn = new XMLElement('div', null, array('class' => 'cloudflare-video-ctn'));
+        $label->appendChild($ctn);
+
+        // remove btn
+        $ctn->appendChild(new XMLElement('em', __('Remove Video'), array(
+            'class' => 'js-cf-video-remove is-hidden'
+        )));
+
         // Create UI
         $panel = new XMLElement('div');
-        $uploadClass = $hasVideo ? 'irrelevant' : 'active';
+        $uploadClass = $hasVideo ? 'is-hidden' : 'is-visible';
         $panel->setAttribute('class', "js-cf-video-upload $uploadClass");
         // File input
         $input = Widget::Input('fields'.$fieldnamePrefix.'['.$this->get('element_name').'][video]'.$fieldnamePostfix);
@@ -247,36 +278,42 @@ class FieldCloudflare_Video extends Field
         }
         $panel->appendChild($input);
         // Add panel
-        $label->appendChild($panel);
+        $ctn->appendChild($panel);
+
+
         // Progress panel
-        $panel = new XMLElement('div');
-        $panel->setAttribute('class', 'js-cf-video-progress');
-        $panel->setAttribute('style', 'height: 10px; background-color: blue; width: 0%');
-        // Add panel
-        $label->appendChild($panel);
+        $progressStatus = new XMLElement('div', null, array('class' => 'js-cf-video-progress cloudflare-video-progress is-hidden'));
+        $progressStatus->appendChild(new XMLElement('div', null, array('class' => 'js-cf-video-progress-bar cloudflare-video-progress-bar')));
+        $progressStatus->appendChild(new XMLElement('p', 'Uploading to the cloud: <span class="js-cf-video-progress-value">0</span>%'));
+        $ctn->appendChild($progressStatus);
+
+
         // Player panel
         $panel = new XMLElement('div');
-        $playerClass = !$hasVideo ? 'irrelevant' : 'active';
+        $playerClass = !$hasVideo ? 'is-hidden' : 'is-visible';
         $panel->setAttribute('class', "js-cf-video-player $playerClass");
-        if ($hasVideo) {
-            $playerElement = new XMLElement('stream');
-            $playerElement->setAttributeArray([
-                'src' => $meta->uid,
-                'controls' => 'controls',
-                'height' => '240px',
-                'width' => '480px',
-            ]);
-            $panel->appendChild($playerElement);
-            $playerScript = new XMLElement('script');
-            $playerScript->setAttributeArray([
-                'data-cfasync' => 'false',
-                'defer' => 'defer',
-                'src' => "https://embed.cloudflarestream.com/embed/r4xu.fla9.latest.js?video={$meta->uid}"
-            ]);
-            $panel->appendChild($playerScript);
-        }
+
+        $streamTemplate = new XMLElement('script', null, array(
+            'type' => 'text/template',
+            'class' => 'js-cf-video-template'
+        ));
+        $playerElement = new XMLElement('stream');
+        $playerElement->setAttributeArray([
+            'src' => 'VIDEOID',
+            'controls' => 'controls'
+        ]);
+        $playerScript = new XMLElement('script');
+        $playerScript->setAttributeArray([
+            'data-cfasync' => 'false',
+            'defer' => 'defer',
+            'src' => "https://embed.cloudflarestream.com/embed/r4xu.fla9.latest.js?video=VIDEOID"
+        ]);
+        $streamTemplate->appendChild($playerElement);
+        $streamTemplate->appendChild($playerScript);
+        $ctn->appendChild($streamTemplate);
+
         // Add panel
-        $label->appendChild($panel);
+        $ctn->appendChild($panel);
 
         // label error management
         if ($flagWithError != null) {

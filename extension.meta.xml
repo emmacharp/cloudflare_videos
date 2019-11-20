@@ -22,7 +22,7 @@
 		<!-- None -->
 	</dependencies>
 	<releases>
-		<release version="1.0.0" date="2019-04-19" min="3.0.0" max="3.x.x">
+		<release version="1.0.0" date="2019-04-19" min="4.0.0" max="4.x.x">
 			- First release
 		</release>
 	</releases>
