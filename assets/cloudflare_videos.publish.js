@@ -48,7 +48,7 @@
             retryDelays: [0, 1000, 3000, 5000],
             overridePatchMethod: false,
             metadata: {
-                filename: file.name,
+                filename: file.name + '-' + Date.now(),
                 filesize: file.size,
                 filetype: file.type,
                 lastModified: file.lastModified,
@@ -65,10 +65,8 @@
                 var percentage = (bytesUploaded / bytesTotal * 100).toFixed(2)  + '%';
                 options.$progress.find('.js-cf-video-progress-bar').css('width', percentage);
                 options.$progress.find('.js-cf-video-progress-value').text(percentage);
-                console.log("Uploading %s: [%d/%d] %s", file.name, bytesUploaded, bytesTotal, percentage);
             },
             onSuccess: function() {
-                console.log('Download %s from %s', upload.file.name, upload.url);
                 options.$url.val(upload.url);
                 fetchMeta(upload.url, options);
             }
@@ -106,6 +104,7 @@
                     $player: $player,
                     $progress: $progress,
                     $remove: $remove,
+                    $upload: $upload,
                     template: template
                 });
 
