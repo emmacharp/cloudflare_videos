@@ -163,8 +163,8 @@ class FieldCloudflare_Video extends Field
             'uploaded' => 'no',
             'processed' => 'no',
             'file' => $filename,
-            'size' => $data['size'],
-            'mimetype' => $data['type'],
+            'size' => $data['video']['size'],
+            'mimetype' => $data['video']['type'],
         );
 
         // return row
@@ -335,7 +335,7 @@ class FieldCloudflare_Video extends Field
         if ($meta['readyToStream'] === true) {
             $playerElement = new XMLElement('stream');
             $playerElement->setAttributeArray([
-                'src' => 'VIDEOID',
+                'src' => $meta['uid'],
                 'controls' => 'controls'
             ]);
             $playerScript = new XMLElement('script');

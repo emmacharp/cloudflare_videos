@@ -44,23 +44,27 @@ define('CURRENT_FOLDER', '\cron');
             if ($unprocessedVideo['uploaded'] === 'no') {
                 $key = uniqid();
 
-                var_dump('hello world');
-                die();
 
                 $client = new \TusPhp\Tus\Client('https://api.cloudflare.com/client/v4/zones/' . $config['zone-id'] . '/stream', $tusOptions);
                 $client->setKey($key);
                 $client->setApiPath('/client/v4/zones/' . $config['zone-id'] . '/stream');
-                $client->file(EXTENSION_ROOT . '\test\video.webm', 'video.webm');
+                $client->file(DOCROOT . '/' . trim($field->get('path'), '/') . '/' . $unprocessedVideo['file'], $unprocessedVideo['file']);
 
                 $client->setMetadata(array(
-                    'filename' => 'video.webm',
-                    'filetype' => 'video/webm',
+                    'filename' => $unprocessedVideo['file'],
+                    'filetype' => $unprocessedVideo['mimetype'],
                 ));
 
                 $unprocessedVideo['video_url'] = $client->create($key);
-                $unprocessedVideo['uploaded'] = 'yes';
+
+                echo 'Cloudflare video instence ' . $unprocessedVideo['video_url'] . PHP_EOL;
 
                 $client->upload();
+                $unprocessedVideo['uploaded'] = 'yes';
+
+                echo 'Done upload for ' . $unprocessedVideo['file'] . PHP_EOL;
+            } else {
+                echo 'Skipping upload for ' . $unprocessedVideo['file'] . PHP_EOL;
             }
 
             $entry = (new EntryManager)->select()->entry($unprocessedVideo['entry_id'])->execute()->next();
@@ -87,10 +91,13 @@ define('CURRENT_FOLDER', '\cron');
             ));
 
             $cloudflareData = $ch->exec();
-            $cloudflareData = json_decode($cloudflareData, JSON_FORCE_OBJECT);
+            $cloudflareData = json_decode($cloudflareData, JSON_FORCE_OBJECT)['result'];
 
             if ($cloudflareData['readyToStream'] === true) {
                 $unprocessedVideo['processed'] = 'yes';
+                echo 'Stream ready for ' . $unprocessedVideo['file'] . PHP_EOL;
+            } else {
+                echo 'Stream not ready for ' . $unprocessedVideo['file'] . PHP_EOL;
             }
 
             $unprocessedVideo['meta'] = json_encode($cloudflareData);
