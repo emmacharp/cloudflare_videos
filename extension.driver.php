@@ -65,8 +65,6 @@ class extension_cloudflare_videos extends Extension
             $page = Administration::instance()->Page;
 
             $page->addStylesheetToHead(URL . '/extensions/cloudflare_videos/assets/cloudflare_videos.publish.css');
-
-            $page->addScriptToHead('https://unpkg.com/tus-js-client@1.7.1/dist/tus.min.js');
             $page->addScriptToHead(URL . '/extensions/cloudflare_videos/assets/cloudflare_videos.publish.js');
             
             self::$assetsLoaded = true;
