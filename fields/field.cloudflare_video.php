@@ -135,12 +135,36 @@ class FieldCloudflare_Video extends Field
             return null;
         }
 
-        var_dump($data);
-        die();
+        if (!!is_string($data['video']) && !empty($entry_id)) {
+            $row = Symphony::Database()
+                        ->select()
+                        ->from('sym_entries_data_' . $this->get('id'))
+                        ->where(['entry_id' => $entry_id])
+                        ->execute()
+                        ->next();
+
+            unset($row['id']);
+            unset($row['entry_id']);
+
+            return $row;
+        } else {
+            $abs_path = DOCROOT . '/' . trim($this->get('path'), '/');
+            $filename = uniqid() . '-' . $data['video']['name'];
+            $success = General::uploadFile($abs_path, $filename, $data['video']['tmp_name']);
+
+            if (!$success) {
+                $status = self::__ERROR__;
+            }
+        }
 
         $row = array(
-            'video_url' => $data['video_url'],
-            'meta' => $data['meta'],
+            'video_url' => '',
+            'meta' => '{}',
+            'uploaded' => 'no',
+            'processed' => 'no',
+            'file' => $filename,
+            'size' => $data['size'],
+            'mimetype' => $data['type'],
         );
 
         // return row
@@ -285,7 +309,7 @@ class FieldCloudflare_Video extends Field
 
         $label = Widget::Label($this->get('label'), null, 'file');
         $isRequired = $this->isRequired();
-        $meta = @json_decode($data['meta']);
+        $meta = @json_decode($data['meta'], JSON_FORCE_OBJECT);
         $hasVideo = !empty($data['video_url']) && $meta;
 
         if(!$isRequired) {
@@ -295,12 +319,15 @@ class FieldCloudflare_Video extends Field
         // Load assets
         extension_cloudflare_videos::loadAssetsOnce();
 
-        $removeCtn = new XMLElement('div', null, array('cloudflare-remove-ctn'));
+        $removeCtn = new XMLElement('div', null, array('class' => 'cloudflare-remove-ctn'));
+        $remove = new XMLElement('button', null, array('class' => ''));
 
         $uploadCtn = new XMLElement('div', null, array('cloudflare-upload-ctn'));
         $input = Widget::Input('fields' . $fieldnamePrefix . '[' . $this->get('element_name') . '][video]' . $fieldnamePostfix);
         $input->setAttribute('accept', 'video/mp4, video/m4v, video/webm, video/mov, video/quicktime');
-        $input->setAttribute('type', 'file'); // todo if already uploaded
+        $input->setAttribute('type', !empty($data['file']) ? 'hidden' : 'file');
+        $input->setAttribute('value', !empty($data['file']) ? $data['file'] : null);
+
         $uploadCtn->appendChild($input);
 
         $stateCtn = new XMLElement('div', null, array('class'=> 'cloudflare-state-ctn'));
@@ -323,10 +350,9 @@ class FieldCloudflare_Video extends Field
             $stateCtn->appendChild('<img src="' . $meta['thumbnail'] . '" />');
         }
 
-        $label->append($removeCtn);
-        $label->append($uploadCtn);
-        $label->append($stateCtn);
-        
+        $label->appendChild($removeCtn);
+        $label->appendChild($uploadCtn);
+        $label->appendChild($stateCtn);
 
         // label error management
         if ($flagWithError != null) {
@@ -416,7 +442,10 @@ class FieldCloudflare_Video extends Field
                     'auto' => true
                 ],
                 'entry_id' => 'int(11)',
-                'video_url' => 'varchar(512)',
+                'video_url' => [
+                    'type' => 'varchar(512)',
+                    'null' => true,
+                ],
                 'meta' => 'text',
                 'uploaded' => [
                     'type' => 'enum',
@@ -439,8 +468,7 @@ class FieldCloudflare_Video extends Field
                 'mimetype' => [
                     'type' => 'varchar(100)',
                     'null' => true,
-                ],
-                'location' => 'text'
+                ]
             ])->keys([
                 'id' => 'primary',
                 'entry_id' => 'unique',
