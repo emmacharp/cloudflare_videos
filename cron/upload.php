@@ -1,9 +1,14 @@
 <?php
 
-use function GuzzleHttp\json_decode;
+    $fp = fopen('/tmp/cloudflare-videos.txt', 'w');
 
-define('CURRENT_FOLDER', '\cron');
-    define('RELROOT', '\extensions\cloudflare_videos\cron');
+    if(!flock($fp, LOCK_EX | LOCK_NB)) {
+        echo 'Unable to obtain lock';
+        exit(-1);
+    }
+
+    define('CURRENT_FOLDER', '/cron');
+    define('RELROOT', '/extensions/cloudflare_videos/cron');
     define('DOCROOT', str_replace(RELROOT, '', rtrim(dirname(__FILE__), '\\/') ));
     define('EXTENSION_ROOT', str_replace(CURRENT_FOLDER, '', rtrim(dirname(__FILE__), '\\/') ));
 
@@ -127,4 +132,4 @@ define('CURRENT_FOLDER', '\cron');
         }
     }
 
-return true;
+    fclose($fp);
