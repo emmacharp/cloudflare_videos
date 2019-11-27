@@ -108,7 +108,7 @@ class FieldCloudflare_Video extends Field
         $message = null;
         $required = $this->isRequired();
 
-        if ($required && (!is_array($data) || count($data) == 0 || strlen($data['video_url']) < 1)) {
+        if ($required && empty($data['video']) && (!is_array($data['video']) && !is_string($data['video']))) {
             $message = __("'%s' is a required field.", array($this->get('label')));
             return self::__MISSING_FIELDS__;
         }
@@ -131,8 +131,22 @@ class FieldCloudflare_Video extends Field
     {
         $status = self::__OK__;
 
-        if (!is_array($data) && !is_string($data)) {
-            return null;
+        $row = array(
+            'video_url' => null,
+            'meta' => '{}',
+            'uploaded' => 'no',
+            'processed' => 'no',
+            'file' => null,
+            'size' => null,
+            'mimetype' => null,
+        );
+
+        if (is_string($data['video']) && strlen($data['video']) === 0) {
+            return $row;
+        }
+
+        if (is_array($data['video']) && empty($data['video']['tmp_name'])) {
+            return $row;
         }
 
         if (!!is_string($data['video']) && !empty($entry_id)) {
@@ -152,20 +166,15 @@ class FieldCloudflare_Video extends Field
             $filename = uniqid() . '-' . $data['video']['name'];
             $success = General::uploadFile($abs_path, $filename, $data['video']['tmp_name']);
 
+            $row['file'] = $filename;
+            $row['size'] = $data['video']['size'];
+            $row['mimetype'] = $data['video']['type'];
+
             if (!$success) {
                 $status = self::__ERROR__;
             }
         }
 
-        $row = array(
-            'video_url' => '',
-            'meta' => '{}',
-            'uploaded' => 'no',
-            'processed' => 'no',
-            'file' => $filename,
-            'size' => $data['video']['size'],
-            'mimetype' => $data['video']['type'],
-        );
 
         // return row
         return $row;
@@ -314,7 +323,7 @@ class FieldCloudflare_Video extends Field
      */
     public function displayPublishPanel(XMLElement &$wrapper, $data = null, $flagWithError = null, $fieldnamePrefix = null, $fieldnamePostfix = null, $entry_id = null)
     {
-        if (!$data || !isset($data['video_url'])) {
+        if (empty($data)) {
             $data = [
                 'file' => null,
                 'video_url' => null,
@@ -327,7 +336,7 @@ class FieldCloudflare_Video extends Field
         $meta = @json_decode($data['meta'], JSON_FORCE_OBJECT);
         $hasVideo = !empty($data['video_url']) && $meta;
 
-        if(!$isRequired) {
+        if (!$isRequired) {
             $label->appendChild(new XMLElement('i', __('Optional')));
         }
 
@@ -337,7 +346,7 @@ class FieldCloudflare_Video extends Field
         $removeCtn = new XMLElement('div', null, array('class' => 'cloudflare-remove-ctn js-cloudflare-video-remove-ctn'));
         $removeCtn->appendChild(new XMLElement('em', __('Remove Video'), array('class' => 'js-cloudflare-video-remove')));
 
-        $uploadCtn = new XMLElement('div', null, array('cloudflare-upload-ctn js-cloudflare-video-upload-ctn'));
+        $uploadCtn = new XMLElement('div', null, array('class' => 'cloudflare-upload-ctn js-cloudflare-video-upload-ctn'));
         $input = Widget::Input('fields' . $fieldnamePrefix . '[' . $this->get('element_name') . '][video]' . $fieldnamePostfix);
         $input->setAttribute('accept', 'video/mp4, video/m4v, video/webm, video/mov, video/quicktime');
         $input->setAttribute('type', !empty($data['file']) ? 'hidden' : 'file');
@@ -364,6 +373,7 @@ class FieldCloudflare_Video extends Field
         } else if ($data['uploaded'] === 'yes') {
             $stateCtn->appendChild('<img src="' . $meta['thumbnail'] . '" /><p>' . __('The video is uploaded to Cloudflare and is processing.') . '</p>');
         } else if (!empty($data['file'])) {
+            $stateCtn->appendChild('<p>' . $data['file'] . '</p>');
             $stateCtn->appendChild('<p>' . __('The video will be uploaded to Cloudflare soon. You can save the entry.') . '</p>');
         }
 

@@ -46,6 +46,10 @@
 
         foreach ($unprocessedVideos as $unprocessedVideo) {
 
+            if (empty($unprocessedVideo['file'])) {
+                continue;
+            }
+
             if ($unprocessedVideo['uploaded'] === 'no') {
                 $key = uniqid();
 
