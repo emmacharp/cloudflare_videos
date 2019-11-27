@@ -212,7 +212,10 @@ class FieldCloudflare_Video extends Field
             }
         }
 
-        $cloudflare = new XMLElement('cloudflare');
+        $cloudflare = new XMLElement('cloudflare', null, array(
+            'uploaded' => $data['uploaded'],
+            'processed' => $data['processed']
+        ));
 
         foreach ($metas as $key => $value) {
             $cloudflare->appendChild(new XMLElement($key, $value));
