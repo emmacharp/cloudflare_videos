@@ -184,7 +184,15 @@ class FieldCloudflare_Video extends Field
             return;
         }
 
-        // todo append the original too
+        $original = new XMLElement('original');
+        $file = new XMLElement('file', null, array('path' => $this->get('path')));
+        $filename = new XMLElement('filename', $data['file'], array(
+            'type' => $data['mimetype'],
+            'size' => $data['size'],
+        ));
+
+        $file->appendChild($filename);
+        $original->appendChild($file);
 
         $metas = json_decode($data['meta'], JSON_FORCE_OBJECT);
 
@@ -204,14 +212,18 @@ class FieldCloudflare_Video extends Field
             }
         }
 
-        $root = new XMLElement('cloudflare');
+        $cloudflare = new XMLElement('cloudflare');
 
         foreach ($metas as $key => $value) {
-            $root->appendChild(new XMLElement($key, $value));
+            $cloudflare->appendChild(new XMLElement($key, $value));
         }
 
-        $root->appendChild(new XMLElement('api-url', $data['video_url']));
-        $wrapper->appendChild(new XMLElement($this->get('element_name'), $root));
+        $cloudflare->appendChild(new XMLElement('api-url', $data['video_url']));
+
+        $root = new XMLElement($this->get('element_name'));
+        $root->appendChild($original);
+        $root->appendChild($cloudflare);
+        $wrapper->appendChild($root);
     }
 
     public function setFromPOST(Array $settings = array())
