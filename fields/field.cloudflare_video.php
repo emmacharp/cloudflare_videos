@@ -363,7 +363,7 @@ class FieldCloudflare_Video extends Field
             $stateCtn->appendChild($playerScript);
         } else if ($data['uploaded'] === 'yes') {
             $stateCtn->appendChild('<img src="' . $meta['thumbnail'] . '" /><p>' . __('The video is uploaded to Cloudflare and is processing.') . '</p>');
-        } else {
+        } else if (!empty($data['file'])) {
             $stateCtn->appendChild('<p>' . __('The video will be uploaded to Cloudflare soon. You can save the entry.') . '</p>');
         }
 

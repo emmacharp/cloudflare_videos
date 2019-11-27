@@ -18,6 +18,8 @@
 
 			if (!!input.val()) {
 				uploadCtn.addClass('is-hidden');
+			} else {
+				removeCtn.addClass('is-hidden');
 			}
 
 			removeBtn.on('click', function (event) {
