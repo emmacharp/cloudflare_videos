@@ -108,7 +108,7 @@ class FieldCloudflare_Video extends Field
         $message = null;
         $required = $this->isRequired();
 
-        if ($required && empty($data['video']) && (!is_array($data['video']) && !is_string($data['video']))) {
+        if ((is_string($data['video']) && strlen($data['video']) === 0) || (is_array($data['video']) && empty($data['video']['tmp_name']))) {
             $message = __("'%s' is a required field.", array($this->get('label')));
             return self::__MISSING_FIELDS__;
         }
@@ -140,6 +140,10 @@ class FieldCloudflare_Video extends Field
             'size' => null,
             'mimetype' => null,
         );
+
+        if (empty($data)) {
+            return $row;
+        }
 
         if (is_string($data['video']) && strlen($data['video']) === 0) {
             return $row;
