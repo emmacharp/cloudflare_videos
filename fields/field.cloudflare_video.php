@@ -347,16 +347,11 @@ class FieldCloudflare_Video extends Field
         // Load assets
         extension_cloudflare_videos::loadAssetsOnce();
 
-        $removeCtn = new XMLElement('div', null, array('class' => 'cloudflare-remove-ctn js-cloudflare-video-remove-ctn'));
-        $removeCtn->appendChild(new XMLElement('em', __('Remove Video'), array('class' => 'js-cloudflare-video-remove')));
-
-        $uploadCtn = new XMLElement('div', null, array('class' => 'cloudflare-upload-ctn js-cloudflare-video-upload-ctn'));
+        $removeBtn = new XMLElement('button', __('Remove'), array('class' => 'js-cloudflare-video-remove'));
         $input = Widget::Input('fields' . $fieldnamePrefix . '[' . $this->get('element_name') . '][video]' . $fieldnamePostfix);
         $input->setAttribute('accept', 'video/mp4, video/m4v, video/webm, video/mov, video/quicktime');
         $input->setAttribute('type', !empty($data['file']) ? 'hidden' : 'file');
         $input->setAttribute('value', !empty($data['file']) ? $data['file'] : null);
-
-        $uploadCtn->appendChild($input);
 
         $stateCtn = new XMLElement('div', null, array('class'=> 'cloudflare-state-ctn js-cloudflare-video-state-ctn'));
 
@@ -375,24 +370,21 @@ class FieldCloudflare_Video extends Field
             $stateCtn->appendChild($playerElement);
             $stateCtn->appendChild($playerScript);
         } else if ($data['uploaded'] === 'yes') {
-            $stateCtn->appendChild('<img src="' . $meta['thumbnail'] . '" /><p>' . __('The video is uploaded to Cloudflare and is processing.') . '</p>');
+            $stateCtn->appendChild('<img src="' . $meta['thumbnail'] . '" /><p class="help">' . __('The video is uploaded to Cloudflare and is processing.') . '</p>');
         } else if (!empty($data['file'])) {
             $stateCtn->appendChild('<p>' . $data['file'] . '</p>');
-            $stateCtn->appendChild('<p>' . __('The video will be uploaded to Cloudflare soon. You can save the entry.') . '</p>');
+            $stateCtn->appendChild('<p class="help">' . __('The video will be uploaded to Cloudflare soon. You can save the entry.') . '</p>');
         }
 
-        $ctn = new XMLElement('div', null, array('class' => 'cloudflare-ctn'));
-
-        $ctn->appendChild($removeCtn);
-        $ctn->appendChild($uploadCtn);
-        $ctn->appendChild($stateCtn);
-        $label->appendChild($ctn);
+        $wrapper->appendChild($input);
+        $wrapper->appendChild($removeBtn);
+        $wrapper->appendChild($stateCtn);
 
         // label error management
         if ($flagWithError != null) {
-            $wrapper->appendChild(Widget::Error($label, $flagWithError));
+            $wrapper->prependChild(Widget::Error($label, $flagWithError));
         } else {
-            $wrapper->appendChild($label);
+            $wrapper->prependChild($label);
         }
     }
 

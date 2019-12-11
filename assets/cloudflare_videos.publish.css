@@ -2,37 +2,23 @@
 	display: none;
 }
 
-.field-cloudflare_video .cloudflare-ctn {
-	margin-top: 1rem;
-	padding: 1rem;
-	box-sizing: border-box;
-	background: #f4f8fb;
-	border: 1px solid #d3dce2;
-	border-radius: 5px;
+.field-cloudflare_video button {
+	float: right;
 }
 
-.field-cloudflare_video input {
-	display: block;
+.field-cloudflare_video div {
+	clear: right;
+	margin-top: 0;
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
 }
 
-.cloudflare-state-ctn {
-	text-align: center;
-	max-width: 700px;
-	margin: 0 auto;
+.field-cloudflare_video div:not(:empty) {
+	margin: var(--standard-inner-rhythm);
 }
 
-.field-cloudflare_video .cloudflare-remove-ctn {
-	text-align: center;
-	margin-bottom: 1em;
-}
-
-.field-cloudflare_video img {
-	display: block;
-	width: 100%;
-	margin-bottom: 1rem;
-}
-
-.field-cloudflare_video p {
-	text-transform: none;
-	margin-bottom: 0;
+.field-cloudflare_video div>* {
+	margin: 0;
+	margin-right: var(--spacing-micro);
 }
